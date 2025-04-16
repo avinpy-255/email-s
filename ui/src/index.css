@@ -1,0 +1,111 @@
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Martabak';
+  src: local("Martabak"),
+   url("./fonts/Martabak.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+
+    --card: 230 32% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 230 32% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 265 84% 70%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 24 94% 52%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 265 84% 70%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-black text-foreground;
+  }
+
+  h1, h2, h4, h5, h6 {
+    font-family: 'Martabak', sans-serif;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-black/30 backdrop-blur-md border border-white/10 rounded-2xl;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .neon-border {
+    @apply border border-zlipper-purple/50;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3), inset 0 0 5px rgba(139, 92, 246, 0.1);
+  }
+
+  .bubble-button {
+    @apply relative overflow-hidden rounded-full font-medium transition-all duration-300;
+    background: linear-gradient(to right, theme('colors.zlipper.purple'), theme('colors.zlipper.pink'));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .bubble-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .bubble-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .drop-zone {
+    @apply rounded-3xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  }
+
+  .drop-zone-active {
+    @apply border-zlipper-purple;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4), inset 0 0 10px rgba(139, 92, 246, 0.1);
+    background: linear-gradient(to bottom, rgba(139, 92, 246, 0.05), rgba(139, 92, 246, 0.01));
+  }
+}
+
