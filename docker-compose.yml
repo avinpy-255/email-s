@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.backend
+    container_name: zlipr-backend
+    ports:
+      - "4567:4567"
+    environment:
+      - ALLOWED_ORIGINS=http://localhost:8080
+    volumes:
+      - ./uploads:/app/uploads
+      - ./zips:/app/zips
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4567/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - zlipper-network
+  frontend:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.frontend
+    container_name: zlipper-frontend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    networks:
+      - zlipper-network
+
+networks:
+  zlipper-network:
+    driver: bridge

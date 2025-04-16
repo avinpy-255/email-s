@@ -12,6 +12,10 @@ import ProButton from './ProButton';
 const MAX_SIZE = 15 * 1024 * 1024;
 // Threshold for showing Pro button (10 MB - 66% of max)
 const PRO_THRESHOLD = 10 * 1024 * 1024;
+// Backend health check endpoint
+const HEALTH_CHECK_URL = "http://localhost:4567/health";
+// Health check interval in milliseconds
+const HEALTH_CHECK_INTERVAL = 2000;
 
 const ZipperApp = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -20,6 +24,9 @@ const ZipperApp = () => {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isHealing, setIsHealing] = useState(false);
   const [isCrashed, setIsCrashed] = useState(false);
+  const [healthCheckActive, setHealthCheckActive] = useState(false);
+  const [recoveryCountdown, setRecoveryCountdown] = useState(0);
+  const [serverWasDown, setServerWasDown] = useState(false);
 
   // Update total size when files change
   useEffect(() => {
@@ -27,11 +34,122 @@ const ZipperApp = () => {
     setTotalSize(newTotalSize);
   }, [files]);
 
+  // Health check effect
+  useEffect(() => {
+    let healthCheckTimer: number | null = null;
+    
+    // Only run health checks when needed
+    if (healthCheckActive) {
+      console.log("Health check active, starting interval checks");
+      
+// Update this in the checkBackendHealth function in ZipperApp.js
+const checkBackendHealth = async () => {
+  try {
+    console.log("Checking backend health...");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    
+    const response = await fetch(HEALTH_CHECK_URL, { 
+      method: 'GET',
+      signal: controller.signal,
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // Updated to accept both 200 and 204 responses as valid
+    if (response.ok) {  // This will accept any 2xx status code
+      console.log("Backend health check succeeded with status:", response.status);
+      // If server was previously down and now it's up, handle recovery
+      if (serverWasDown) {
+        console.log("Server has recovered!");
+        toast.success("Backend service has recovered!");
+        setIsHealing(false);
+        setRecoveryCountdown(3);
+        setServerWasDown(false);
+      }
+    } else {
+      console.log("Backend returned error status:", response.status);
+      if (!serverWasDown) {
+        setServerWasDown(true);
+        setIsCrashed(true);
+        setIsHealing(true);
+      }
+    }
+  } catch (error) {
+    console.log("Backend health check failed:", error);
+    // Network error means backend is down
+    if (!serverWasDown) {
+      setServerWasDown(true);
+      setIsCrashed(true);
+      setIsHealing(true);
+      toast.error("Server is down! Self-healing in progress...");
+    }
+  }
+};
+
+      // Initial check immediately
+      checkBackendHealth();
+      
+      // Set up recurring checks
+      healthCheckTimer = window.setInterval(checkBackendHealth, HEALTH_CHECK_INTERVAL);
+    }
+    
+    return () => {
+      if (healthCheckTimer !== null) {
+        console.log("Cleaning up health check timer");
+        window.clearInterval(healthCheckTimer);
+      }
+    };
+  }, [healthCheckActive, serverWasDown]);
+
+  // Recovery countdown effect
+  useEffect(() => {
+    let countdownTimer: number | null = null;
+    
+    if (recoveryCountdown > 0) {
+      console.log(`Recovery countdown: ${recoveryCountdown}`);
+      countdownTimer = window.setInterval(() => {
+        setRecoveryCountdown(prev => {
+          if (prev <= 1) {
+            console.log("Countdown finished, resetting UI");
+            resetUI();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (countdownTimer !== null) {
+        window.clearInterval(countdownTimer);
+      }
+    };
+  }, [recoveryCountdown]);
+
+  // Reset the entire UI state
+  const resetUI = () => {
+    console.log("Resetting UI state");
+    setFiles([]);
+    setTotalSize(0);
+    setDownloadUrl(null);
+    setIsCrashed(false);
+    setIsHealing(false);
+    setHealthCheckActive(false);
+    setRecoveryCountdown(0);
+    setServerWasDown(false);
+    toast.info("UI reset complete - ready for new files");
+  };
+
   // Handle adding new files
   const handleFilesAdded = (newFiles: File[]) => {
     // Reset states when adding new files
     setDownloadUrl(null);
     setIsCrashed(false);
+    setIsHealing(false);
+    setHealthCheckActive(false);
+    setRecoveryCountdown(0);
     
     setFiles(prev => [...prev, ...newFiles]);
     toast.success(`Added ${newFiles.length} file${newFiles.length !== 1 ? 's' : ''}`);
@@ -53,45 +171,77 @@ const ZipperApp = () => {
     setIsZipping(true);
     setDownloadUrl(null);
     
-    // Simulate zipping process
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // If total size exceeds MAX_SIZE, simulate crash
-    if (totalSize > MAX_SIZE) {
-      setIsCrashed(true);
-      setIsZipping(false);
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append("files", file);
+      });
+  
+      // Check if total size exceeds limit
+      if (totalSize > MAX_SIZE) {
+        console.log("Large file upload detected (> 15MB), expecting server crash");
+        // Start health checks BEFORE sending the request that might crash the server
+        setHealthCheckActive(true);
+      }
       
-      // Start healing process after a delay
-      setTimeout(() => {
-        setIsHealing(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      try {
+        const response = await fetch("http://localhost:4567/upload", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal
+        });
         
-        // Simulate healing
-        setTimeout(() => {
-          setIsHealing(false);
-          setIsCrashed(false);
-          setFiles([]);
-          setTotalSize(0);
-          toast.success("Zlipper has self-healed! Ready to go again.");
-        }, 3000);
-      }, 2000);
-      
-      return;
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          if (response.status === 413) {
+            toast.error("Files too large! Max size is 15MB.");
+          } else {
+            throw new Error(`Upload failed with status ${response.status}`);
+          }
+        } else {
+          const data = await response.json();
+          setDownloadUrl(`http://localhost:4567/download/zlipr.zip`);
+          toast.success("ZIP file created successfully!");
+        }
+      } catch (error) {
+        console.error("Error during upload:", error);
+        
+        // If the request was aborted or network error occurred
+        if (error.name === 'AbortError' || error instanceof TypeError) {
+          console.log("Network error or timeout - checking if server crashed");
+          setServerWasDown(true);
+          setIsCrashed(true);
+          setIsHealing(true);
+          setHealthCheckActive(true);
+          toast.error("Server crashed! Self-healing in progress...");
+        } else {
+          toast.error("Something went wrong during ZIP creation.");
+        }
+      }
+    } catch (e) {
+      console.error("Unexpected error:", e);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsZipping(false);
     }
-    
-    // Create dummy zip URL 
-    // In a real app, we would actually create a zip file here
-    const dummyUrl = "#dummy-zip-download";
-    setDownloadUrl(dummyUrl);
-    setIsZipping(false);
-    toast.success("ZIP file created successfully!");
   };
 
   // Clear all files
   const handleClearFiles = () => {
-    setFiles([]);
-    setTotalSize(0);
-    setDownloadUrl(null);
-    toast.info("All files cleared");
+    resetUI();
+  };
+
+  // Force crash for testing
+  const simulateCrash = () => {
+    setServerWasDown(true);
+    setIsCrashed(true);
+    setIsHealing(true);
+    setHealthCheckActive(true);
+    toast.error("Simulated server crash! Testing self-healing...");
   };
 
   return (
@@ -149,6 +299,13 @@ const ZipperApp = () => {
             {/* Size Indicator */}
             <div className="mt-4">
               <SizeIndicator currentSize={totalSize} maxSize={MAX_SIZE} />
+              {/* Warning when exceeds size limit */}
+              {totalSize > MAX_SIZE && (
+                <div className="text-red-400 text-sm mt-1 flex items-center">
+                  <AlertTriangle size={14} className="mr-1" />
+                  Exceeds 15MB limit - this will crash the server (but it'll self-heal!)
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -188,13 +345,26 @@ const ZipperApp = () => {
                 Oops... Zlipper zipped itself out 😵‍💫
               </h3>
               <p className="text-gray-400">
-                {isHealing 
-                  ? "Don't worry, it's healing..." 
-                  : "But don't worry, it's about to heal!"}
+                {recoveryCountdown > 0 
+                  ? `Server recovered! Resetting UI in ${recoveryCountdown}...` 
+                  : isHealing 
+                    ? "Self-healing in progress... Please wait" 
+                    : "But don't worry, it's about to heal!"}
               </p>
               {isHealing && (
-                <div className="flex justify-center mt-4">
-                  <div className="animate-spin w-10 h-10 border-4 border-zlipper-purple border-t-transparent rounded-full" />
+                <div className="flex flex-col items-center mt-4">
+                  <div className="animate-spin w-10 h-10 border-4 border-zlipper-purple border-t-transparent rounded-full mb-3" />
+                  <p className="text-sm text-gray-400">
+                    Kubernetes/Docker is working on it...
+                    <></>
+                  </p>
+                </div>
+              )}
+              {recoveryCountdown > 0 && (
+                <div className="flex flex-col items-center mt-4">
+                  <div className="w-10 h-10 border-4 border-green-500 rounded-full mb-3 flex items-center justify-center">
+                    <span className="text-green-500 font-bold">{recoveryCountdown}</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -219,6 +389,7 @@ const ZipperApp = () => {
           )}
         </div>
       )}
+      
       
       {/* Footer */}
       <footer className="mt-16 text-center text-xs text-gray-500 pb-8">
