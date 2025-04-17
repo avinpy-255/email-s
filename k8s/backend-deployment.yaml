@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zlipper-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zlipper-backend
+  template:
+    metadata:
+      labels:
+        app: zlipper-backend
+    spec:
+      containers:
+        - name: zlipper-backend
+          image: zlipper-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4567
+          env:
+            - name: ALLOWED_ORIGINS
+              value: "http://localhost:8080"
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+            - name: zips
+              mountPath: /app/zips
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4567
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4567
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: uploads
+          emptyDir: {}
+        - name: zips
+          emptyDir: {}

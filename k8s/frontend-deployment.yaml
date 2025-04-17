@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zlipper-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zlipper-frontend
+  template:
+    metadata:
+      labels:
+        app: zlipper-frontend
+    spec:
+      containers:
+        - name: zlipper-frontend
+          image: zlipper-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
