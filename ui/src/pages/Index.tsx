@@ -1,6 +1,5 @@
 import ZipperApp from "@/components/ZipperApp";
 import StarsBackground from "@/components/StarsBackground";
-import '../fonts/Martabak.ttf'
 
 const Index = () => {
   return (

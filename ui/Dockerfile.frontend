@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -10,10 +10,21 @@ RUN npm install
 COPY . .
 
 # Build the application (if using a build step)
-RUN npm run build
+RUN npm run build:dev
 
-# Expose the port the app runs on
+
+# Stage 2: Serve the application using serve
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy the built application from the builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm install -g serve
+
+# Expose the port
 EXPOSE 8080
 
-# Command to run the application (adjust based on your frontend framework)
-CMD ["npm", "run", "dev"]
+# Command to serve the application
+CMD ["serve", "-s", "dist", "-l", "8080"]
