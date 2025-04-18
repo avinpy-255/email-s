@@ -18,7 +18,7 @@ func main() {
 
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:8080"
+		allowedOrigins = "http://localhost:8080, http://192.168.49.2:30080"
 	}
 
 	// CORS for frontend on port 8080

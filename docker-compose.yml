@@ -7,7 +7,7 @@ services:
     ports:
       - "4567:4567"
     environment:
-      restart: always
+      - restart=always
       - ALLOWED_ORIGINS=http://localhost:8080
     volumes:
       - ./uploads:/app/uploads
