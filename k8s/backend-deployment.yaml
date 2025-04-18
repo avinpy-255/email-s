@@ -31,15 +31,25 @@ spec:
               path: /health
               port: 4567
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 5 # reduced from 10 to 5
+            failureThreshold: 3 # Added failureThreshold to restart after 3 failures
           readinessProbe:
             httpGet:
               path: /health
               port: 4567
             initialDelaySeconds: 5
             periodSeconds: 5
+            failureThreshold: 3 # Added failureThreshold to restart after 3 failures
+          resources:
+            requests:
+              cpu: "200m" # Request 200 milli-cores of CPU
+              memory: "256Mi" # Request 256 MiB of memory
+            limits:
+              cpu: "500m" # Limit to 500 milli-cores of CPU
+              memory: "512Mi" # Limit to 512 MiB of memory
       volumes:
         - name: uploads
           emptyDir: {}
         - name: zips
           emptyDir: {}
+      restartPolicy: Always # Added restartPolicy
