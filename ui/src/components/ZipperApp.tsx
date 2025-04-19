@@ -11,9 +11,11 @@ import ProButton from './ProButton';
 // Maximum size in bytes (15 MB)
 const MAX_SIZE = 15 * 1024 * 1024;
 // Threshold for showing Pro button (10 MB - 66% of max)
-const PRO_THRESHOLD = 10 * 1024 * 1024;
+const PRO_THRESHOLD = 10 * 1024 * 1024; // http://192.168.49.2:30081
+const BACKEND_URL = "http://192.168.49.2:30081";
+const UPLOAD_URL = BACKEND_URL + "/upload";
 // Backend health check endpoint
-const HEALTH_CHECK_URL = "http://localhost:4567/health";
+const HEALTH_CHECK_URL =  BACKEND_URL +"/health";
 // Health check interval in milliseconds
 const HEALTH_CHECK_INTERVAL = 2000;
 
@@ -39,61 +41,56 @@ const ZipperApp = () => {
     let healthCheckTimer: number | null = null;
     
     // Only run health checks when needed
-    if (healthCheckActive) {
-      console.log("Health check active, starting interval checks");
-      
-// Update this in the checkBackendHealth function in ZipperApp.js
-const checkBackendHealth = async () => {
-  try {
-    console.log("Checking backend health...");
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-    
-    const response = await fetch(HEALTH_CHECK_URL, { 
-      method: 'GET',
-      signal: controller.signal,
-      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-    });
-    
-    clearTimeout(timeoutId);
-    
-    // Updated to accept both 200 and 204 responses as valid
-    if (response.ok) {  // This will accept any 2xx status code
-      console.log("Backend health check succeeded with status:", response.status);
-      // If server was previously down and now it's up, handle recovery
-      if (serverWasDown) {
-        console.log("Server has recovered!");
-        toast.success("Backend service has recovered!");
-        setIsHealing(false);
-        setRecoveryCountdown(3);
-        setServerWasDown(false);
-      }
-    } else {
-      console.log("Backend returned error status:", response.status);
-      if (!serverWasDown) {
-        setServerWasDown(true);
-        setIsCrashed(true);
-        setIsHealing(true);
-      }
-    }
-  } catch (error) {
-    console.log("Backend health check failed:", error);
-    // Network error means backend is down
-    if (!serverWasDown) {
-      setServerWasDown(true);
-      setIsCrashed(true);
-      setIsHealing(true);
-      toast.error("Server is down! Self-healing in progress...");
-    }
-  }
-};
+    if (healthCheckActive) {      console.log("Health check active, starting interval checks");      
+       const checkBackendHealth = async () => {
+        try {
+          console.log("Checking backend health...");
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-      // Initial check immediately
-      checkBackendHealth();
-      
-      // Set up recurring checks
-      healthCheckTimer = window.setInterval(checkBackendHealth, HEALTH_CHECK_INTERVAL);
-    }
+          const response = await fetch(HEALTH_CHECK_URL, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          });
+
+          clearTimeout(timeoutId);
+
+          // Updated to accept both 200 and 204 responses as valid
+          if (response.ok) {  // This will accept any 2xx status code
+            console.log("Backend health check succeeded with status:", response.status);
+            // If server was previously down and now it's up, handle recovery
+            if (serverWasDown) {
+              console.log("Server has recovered!");
+              toast.success("Backend service has recovered!");
+              setIsHealing(false);
+              setRecoveryCountdown(3);
+              setServerWasDown(false);
+            }
+          } else {
+            console.log("Backend returned error status:", response.status);
+            if (!serverWasDown) {
+              setServerWasDown(true);
+              setIsCrashed(true);
+              setIsHealing(true);
+            }
+          }
+        } catch (error) {
+          console.log("Backend health check failed:", error);
+          // Network error means backend is down
+          if (!serverWasDown) {
+            setServerWasDown(true);
+            setIsCrashed(true);
+            setIsHealing(true);
+            toast.error("Server is down! Self-healing in progress...");
+          }
+        }
+      };
+
+          checkBackendHealth();
+
+          healthCheckTimer = window.setInterval(checkBackendHealth, HEALTH_CHECK_INTERVAL);
+        }
     
     return () => {
       if (healthCheckTimer !== null) {
@@ -184,12 +181,14 @@ const checkBackendHealth = async () => {
         setHealthCheckActive(true);
       }
       
+      
       const controller = new AbortController();
+      
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
       try {
-        const response = await fetch("http://localhost:4567/upload", {
-          method: "POST",
+        const response = await fetch(UPLOAD_URL, {
+         method: "POST",
           body: formData,
           signal: controller.signal
         });
@@ -204,7 +203,7 @@ const checkBackendHealth = async () => {
           }
         } else {
           const data = await response.json();
-          setDownloadUrl(`http://localhost:4567/download/zlipr.zip`);
+          setDownloadUrl(BACKEND_URL + "/download/zlipr.zip");
           toast.success("ZIP file created successfully!");
         }
       } catch (error) {

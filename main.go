@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"zlipper/handlers"
@@ -13,21 +13,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
+func main(){
 	router := gin.Default()
 
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
 	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:8080, http://192.168.49.2:30080"
+		allowedOrigins = "http://localhost:8080,http://192.168.49.2:30080"
 	}
 
-	// CORS for frontend on port 8080
+	// Split the allowedOrigins string into a slice of strings
+	originSlice := strings.Split(allowedOrigins, ",")
+	// Configure CORS with the dynamic list of allowed origins
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{allowedOrigins},
-		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Cache-Control", "Pragma"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+	 AllowOrigins:     originSlice,
+	 AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+	 AllowHeaders:     []string{"Origin", "Content-Type", "Cache-Control", "Pragma"},
+	 AllowCredentials: true,
+	 MaxAge:           12 * time.Hour,
 	}))
 
 	// Routes
@@ -36,7 +38,7 @@ func main() {
 	// Serve downloadable files with download headers
 	router.GET("/download/:filename", func(c *gin.Context) {
 		filename := c.Param("filename")
-		fullPath := filepath.Join("zips", filename)
+		fullPath := "zips/" + filename
 
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			c.String(http.StatusNotFound, "File not found")

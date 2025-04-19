@@ -4,6 +4,8 @@ go 1.24.0
 
 require github.com/gin-gonic/gin v1.10.0
 
+require github.com/fsnotify/fsnotify v1.9.0 // indirect
+
 require (
 	github.com/bytedance/sonic v1.13.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
