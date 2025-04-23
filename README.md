@@ -1,4 +1,4 @@
-# Zlipper
+# Zliper
 **Multi-format File Compression App**
 
 Zlipper is a lightweight, high-performance file compression application built with Go and React. It supports multiple file types and compresses them efficiently into a single archive. Designed with containerization and cloud-native deployment in mind, Zlipper uses Docker and Minikube for local orchestration.
