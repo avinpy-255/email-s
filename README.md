@@ -1,7 +1,7 @@
 # Zliper
 **Multi-format File Compression App**
 
-Zlipper is a lightweight, high-performance file compression application built with Go and React. It supports multiple file types and compresses them efficiently into a single archive. Designed with containerization and cloud-native deployment in mind, Zlipper uses Docker and Minikube for local orchestration.
+Zliper is a lightweight, high-performance file compression application built with Go and React. It supports multiple file types and compresses them efficiently into a single archive. Designed with containerization and cloud-native deployment in mind, Zlipper uses Docker and Minikube for local orchestration.
 
 ---
 
@@ -112,11 +112,3 @@ minikube service zlipper-backend-service --url
 - **Backend URL:** [http://192.168.49.2:30081](http://192.168.49.2:30081)
 
 ---
-
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/avinpy-255/zliper/issues).
